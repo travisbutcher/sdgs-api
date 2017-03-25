@@ -1,0 +1,41 @@
+{
+  "name": "koop-provider-sample",
+  "version": "0.0.1",
+  "description": "An API to retieve data related to the SDGs based on Koop",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "test": "standard && tape test/*.js | tap-spec"
+  },
+  "dependencies": {
+    "config": "^1.25.1",
+    "dotenv": "^4.0.0",
+    "koop": "^3.4.0",
+    "koop-cache-memory": "^1.1.0",
+    "request": "^2.79.0"
+  },
+  "author": "Adam Pfister",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "nock": "^9.0.2",
+    "standard": "^9.0.1",
+    "tap-spec": "^4.1.1",
+    "tape": "^4.6.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/UNStats-SDGs/sdgs-api.git"
+  },
+  "bugs": {
+    "url": "https://github.com/UNStats-SDGs/sdgs-api/issues"
+  },
+  "homepage": "https://github.com/UNStats-SDGs/sdgs-api",
+  "keywords": [
+    "koop",
+    "provider",
+    "sdgs"
+  ]
+}
