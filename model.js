@@ -6,10 +6,19 @@
   Documentation: http://koopjs.github.io/docs/specs/provider/
 */
 const request = require('request').defaults({gzip: true, json: true});
-const config = require('config');
 
 function Model (koop) {}
 
+/**
+  ~ BEGIN ~
+  JSON API
+*/
+
+/**
+ * This function adds one to its input.
+ * @param {number} input any number
+ * @returns {number} that number, plus one.
+ */
 Model.prototype.getResourceRootJsonApi = function (req, callback) {
   let resourceRoot = `${req.protocol}://${req.hostname}/sdgs`;
   let requestUrl = `${req.protocol}://${req.hostname}${req._parsedUrl.pathname}`;
@@ -44,87 +53,21 @@ Model.prototype.getResourceRootJsonApi = function (req, callback) {
   callback(null, resource);
 }
 
-Model.prototype.getOneOrAllResourceJsonApi = function (req, callback) {
-  const originalUrl = req._parsedUrl.pathname;
-  const parts = originalUrl.split('/').filter( part => part !== '' );
+Model.prototype.getResourceJsonApi = function (req, callback) {
+  const data = req.rawData;
+  const resource = translateToJSONAPI(req.rawDataType, req.query.sources, data);
+  resource.meta = buildMeta(req, resource.data.length);
 
-  const secondToLastOne = parts[parts.length-2];
-  const lastOne = parts[parts.length-1];
-
-  let type, id, parent, shouldFilter = false, filterId;
-
-  if (lastOne.indexOf('.') !== -1 || secondToLastOne === 'series') {
-    type = secondToLastOne;
-    id = lastOne;
-  } else {
-    type = lastOne;
-    id = 'all';
-    shouldFilter = true;
-    filterId = secondToLastOne;
-    parent = parts[parts.length-3];
+  if (req.includedData) {
+    resource.included =
+      req.includedData.map( (include) => {
+        return translateToJSONAPI(include.type, req.query.sources, include.data);
+      })
+      // flatten arrays
+      .reduce( (acc,cur) => acc.concat(cur.data), []);
   }
 
-  getFromGithub({type: type, id: id}, (err, raw) => {
-    if (err) return callback(err);
-
-    let data = raw;
-
-    if (shouldFilter) {
-      // console.log(filterId);
-      const parentField = `${singluarize(parent)}_id`;
-
-      let filtered = {};
-
-      Object.keys(raw).forEach( (key) => {
-        // console.log('raw[key][parentField]', raw[key][parentField], 'filterId', filterId);
-        if (raw[key][parentField] === filterId) {
-          filtered[key] = raw[key];
-        }
-      });
-
-      data = filtered;
-    }
-
-    const resource = translateToJSONAPI(type, req.query.sources, data);
-
-    resource.meta = buildMeta(req, resource.data.length);
-
-    callback(null, resource);
-  });
-}
-
-Model.prototype.getAllResourceJsonApi = function (req, callback) {
-  getFromGithub(req.params, (err, raw) => {
-    if (err) return callback(err);
-    const resource = translateToJSONAPI(req.params.type, req.query.sources, raw);
-
-    resource.meta = buildMeta(req, resource.data.length);
-
-    callback(null, resource);
-  });
-}
-
-function getFromGithub (options, callback) {
-  let id = options.id;
-  if (!id || id === undefined) {
-    id = 'all';
-  }
-
-  let url = `https://raw.githubusercontent.com/UNStats-SDGs/sdgs-data/master/${options.type}/${id}.json?raw=true`;
-  // console.log(url);
-  request(url,  (err, res, body) => {
-
-    if (err || (res.statusCode > 400 && res.statusCode < 600)) {
-      return callback({
-        message: 'error requesting data from GitHub',
-        github_request_url: url,
-        status_code: res.statusCode
-      });
-    }
-
-    callback(null, body);
-  });
-
+  callback(null, resource);
 }
 
 function singluarize(str) {
@@ -190,14 +133,53 @@ function getJsonApiAttributes (obj, sources, type) {
   return atts;
 }
 
+function buildMeta (req, len) {
+
+  let apiRoot = `${req.protocol}://${req.hostname}`;
+  let requestUrl = `${req.protocol}://${req.hostname}${req.originalUrl}`;
+
+  if (req.hostname === 'localhost') {
+    requestUrl = `${req.protocol}://${req.hostname}:${process.env.PORT}${req.originalUrl}`;
+    apiRoot = `${req.protocol}://${req.hostname}:${process.env.PORT}`;
+  }
+
+  let meta = {
+    apiRoot: `${apiRoot}/sdgs`,
+    request: requestUrl,
+    queryParameters: {}
+  };
+
+  if (len > 1) {
+    meta.stats = { count: len }
+  }
+
+  if (req.query) {
+    meta.queryParameters = req.query;
+  }
+
+  if (req.messages) {
+    meta.messages = req.messages;
+  }
+
+  return meta;
+}
+
+/**
+  ~ END ~
+  JSON API
+*/
+
+/**
+  ~ BEGIN ~
+  Core Koop - /FeatureServer/0 routes with support for Esri JSON & GeoJSON (f=geojson)
+*/
+
 Model.prototype.getData = function (req, callback) {
-  const options = req.params
-  options.type = options.host
-  getFromGithub(options, (err, raw) => {
-    if (err) return callback(err)
-    const geojson = translate(raw, options)
-    callback(null, geojson)
-  })
+  const data = req.rawData;
+
+  const resource = translate(data, {type: req.rawDataType});
+
+  callback(null, resource);
 }
 
 function translate (input, options) {
@@ -267,26 +249,9 @@ function getFeatureAttributes (obj, type) {
   return atts;
 }
 
-function buildMeta (req, len) {
-
-  let apiRoot = `${req.protocol}://${req.hostname}`;
-  let requestUrl = `${req.protocol}://${req.hostname}${req.originalUrl}`;
-
-  if (req.hostname === 'localhost') {
-    requestUrl = `${req.protocol}://${req.hostname}:${process.env.PORT}${req.originalUrl}`;
-    apiRoot = `${req.protocol}://${req.hostname}:${process.env.PORT}`;
-  }
-
-  let meta = {
-    apiRoot: `${apiRoot}/sdgs`,
-    request: requestUrl
-  };
-
-  if (len > 1) {
-    meta.stats = { count: len }
-  }
-
-  return meta;
-}
+/**
+  ~ END ~
+  Core Koop
+*/
 
 module.exports = Model

@@ -18,15 +18,8 @@ Controller.prototype.getResourceRootJSONAPI = function (req, res) {
   })
 }
 
-Controller.prototype.getAllResourceJSONAPI = function (req, res) {
-  this.model.getAllResourceJsonApi(req, (err, resource) => {
-    if (err) res.status(500 || err.code).json({error: err})
-    else res.json( resource )
-  })
-}
-
-Controller.prototype.getOneOrAllResourceJSONAPI = function (req, res) {
-  this.model.getOneOrAllResourceJsonApi(req, (err, resource) => {
+Controller.prototype.getResourceJSONAPI = function (req, res) {
+  this.model.getResourceJsonApi(req, (err, resource) => {
     if (err) res.status(500 || err.code).json({error: err})
     else res.json( resource )
   })

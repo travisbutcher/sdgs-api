@@ -1,5 +1,5 @@
 {
-  "name": "koop-provider-sample",
+  "name": "koop-provider-sdgs",
   "version": "0.0.1",
   "description": "An API to retieve data related to the SDGs based on Koop",
   "main": "index.js",
@@ -8,11 +8,13 @@
   },
   "scripts": {
     "start": "node server.js",
-    "test": "standard && tape test/*.js | tap-spec"
+    "test": "standard && tape test/*.js | tap-spec",
+    "debug": "node --inspect --debug-brk server.js"
   },
   "dependencies": {
     "config": "^1.25.1",
     "dotenv": "^4.0.0",
+    "is-positive-integer": "^1.1.1",
     "koop": "^3.4.0",
     "koop-cache-memory": "^1.1.0",
     "request": "^2.79.0"

@@ -4,27 +4,42 @@ require('dotenv').config();
 process.on('SIGINT', () => process.exit(0))
 process.on('SIGTERM', () => process.exit(0))
 
+const express = require('express');
+const app = express();
+const router = express.Router();
+
 // Initialize Koop
 const Koop = require('koop');
 const koop = new Koop();
 
+const sdgValidRoutes = require('./middleware/sdgValidRoutes.js');
+const githubGetter = require('./middleware/githubGetter.js');
+const parseRoutePath = require('./middleware/parseRoutePath.js')
+
+// TODO: ask Daniel for help implementing this
 // const cache = require('koop-cache-memory');
 // koop.register(cache);
 
-// Install the Sample Provider
+// Register the SDG Provider with Koop
 const provider = require('./')
 koop.register(provider)
 
 // Start listening for HTTP traffic
-// const config = require('config')
 // Set port for configuration or fall back to default
 const port = process.env.PORT || 3000;
 
-// if (!process.env.API_ROOT) {
-//   process.env.API_ROOT = `http://localhost:${port}`;
-// }
+// validate route for Goals when specifying an :id
+app.use('/sdgs/:type/:id', sdgValidRoutes);
 
-koop.server.listen(port, (err) => {
+// parse the route path & params and append to `req` object
+app.use('/sdgs/:type/:id?', parseRoutePath);
+
+// pre-load data from Github and append to `req` object
+app.use('/sdgs/:type/:id?/:first_level?/:first_level_id?/:second_level?/:second_level_id?/:third_level?/:third_level_id?', githubGetter);
+
+app.use(koop.server);
+
+app.listen(port, (err) => {
 
   const message = `
 

@@ -13,11 +13,11 @@ module.exports = [
   {
     path: '/sdgs/:type/:id?',
     methods: [ 'get', 'post' ],
-    handler: 'getAllResourceJSONAPI'
+    handler: 'getResourceJSONAPI'
   },
   {
     path: '/sdgs/:type/:id/:first_level/:first_level_id?/:second_level?/:second_level_id?/:third_level?/:third_level_id?',
     methods: [ 'get', 'post' ],
-    handler: 'getOneOrAllResourceJSONAPI'
+    handler: 'getResourceJSONAPI'
   }
 ];
