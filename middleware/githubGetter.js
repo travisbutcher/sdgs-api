@@ -1,85 +1,66 @@
+require('promise-hash');
+
 const request = require('request').defaults({gzip: true, json: true});
 
 module.exports = function (req, res, next) {
-  console.log('req.parsedParts', req.parsedParts);
-
   const githubBaseUrl = 'https://raw.githubusercontent.com/UNStats-SDGs/sdgs-data/master';
   const githubBaseUrlSuffix = '.json?raw=true';
 
-  req.initialRequestUrl = `${githubBaseUrl}/${req.parsedParts.type}/${req.parsedParts.id}${githubBaseUrlSuffix}`;
+  let lang = 'en';
+  if (req.query && req.query.lang) {
+    lang = req.query.lang;
+  }
+
+  const baseRequest = req.parsedParts.baseRequest;
+
+  const githubRequestUrl = `${githubBaseUrl}/${baseRequest.type}/${lang}/${baseRequest.id}${githubBaseUrlSuffix}`;
 
   // do initial request
-  getFromGithub(req.initialRequestUrl, (err, raw) => {
+  getFromGithub(githubRequestUrl, (err, raw) => {
 
     if (err) return res.status(err.status_code).send(err);
 
     if (raw && raw !== undefined) {
 
-      req.rawDataType = req.parsedParts.type;
+      req.rawDataType = baseRequest.type;
 
-      if (req.parsedParts.filter) {
-        req.rawData = filterData(raw, req.parsedParts.filter);
+      if (req.parsedParts.baseRequest.filter) {
+        req.rawData = filterData(raw, req.parsedParts.baseRequest.filter);
       } else {
         req.rawData = raw;
       }
 
       // ?includes=
-      if (req.includes) {
-        let promises = [], promise;
+      if (req.parsedParts.includedRequests) {
+        let promises = {}, promise, includeUrl;
 
-        req.includes.forEach( (inc) => {
-          // console.log('inc', inc);
-          let id = req.parsedParts.id;
-          if (req.parsedParts.parentId || id === 'all') {
-            id = req.parsedParts.parentId;
-          }
-
-          let filterField;
-          if (inc === 'goals') {
-            filterField = 'id';
-          } else if (req.parsedParts.parentType) {
-            const singularField = singluarize(req.parsedParts.parentType);
-            filterField = `${singularField}_id`;
-          }
-
-          includeUrl = `${githubBaseUrl}/${inc}/all${githubBaseUrlSuffix}`;
+        req.parsedParts.includedRequests.forEach( (inc) => {
+          includeUrl = `${githubBaseUrl}/${inc.type}/${lang}/${inc.id}${githubBaseUrlSuffix}`;
 
           promise = new Promise( (resolve, reject) => {
             getFromGithub(includeUrl, (err, raw) => {
-              if (err) return reject(err)
-              console.log('filterField', filterField);
-              console.log('id', id);
-              const filteredIncluded = filterData(raw, {field: filterField, value: id});
-
-              resolve(filteredIncluded);
+              if (err) return reject(err);
+              let data = raw;
+              if (inc.filter) {
+                if (!inc.filter.value) {
+                  inc.filter.value = req.rawData[inc.filter.field.preFilter];
+                  inc.filter.field = inc.filter.field.postFilter;
+                }
+                data = filterData(raw, inc.filter);
+              }
+              resolve(data);
             });
           });
 
-          promises.push( promise );
+          promises[inc.type] = promise;
         });
 
-        Promise.all(promises)
+        Promise.hash(promises)
           .then( (data) => {
-            // console.log('included data: ', data);
-            req.includedData = data.map( (inc) => {
-              let obj = { data: inc };
-              // console.log('inc', inc);
-              const id = Object.keys(inc)[0];
-              if (id.indexOf('_') !== -1) {
-                // series
-                obj.type = 'series';
-              } else if (id.split('.').length === 2) {
-                // target
-                obj.type = 'targets';
-              } else if (id.split('.').length === 3) {
-                // indicator
-                obj.type = 'indicators';
-              } else {
-                // otherwise it has to be a goal
-                obj.type = 'goals';
-              }
-              return obj;
-            });
+            // console.log('included raw data: ', data);
+            const includedData = processIncludedData(data);
+            console.log('includedData', includedData);
+            req.includedData = includedData;
             next();
           })
           .catch( (err) => {
@@ -91,6 +72,15 @@ module.exports = function (req, res, next) {
       }
     }
 
+  });
+}
+
+function processIncludedData (response) {
+  return Object.keys(response).map( (key) => {
+    return {
+      type: key,
+      data: response[key]
+    };
   });
 }
 

@@ -136,10 +136,10 @@ function getJsonApiAttributes (obj, sources, type) {
 function buildMeta (req, len) {
 
   let apiRoot = `${req.protocol}://${req.hostname}`;
-  let requestUrl = `${req.protocol}://${req.hostname}${req.originalUrl}`;
+  let requestUrl = `${req.protocol}://${req.hostname}${req.baseUrl}`;
 
   if (req.hostname === 'localhost') {
-    requestUrl = `${req.protocol}://${req.hostname}:${process.env.PORT}${req.originalUrl}`;
+    requestUrl = `${req.protocol}://${req.hostname}:${process.env.PORT}${req.baseUrl}`;
     apiRoot = `${req.protocol}://${req.hostname}:${process.env.PORT}`;
   }
 

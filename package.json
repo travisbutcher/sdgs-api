@@ -17,6 +17,7 @@
     "is-positive-integer": "^1.1.1",
     "koop": "^3.4.0",
     "koop-cache-memory": "^1.1.0",
+    "promise-hash": "^1.0.0",
     "request": "^2.79.0"
   },
   "author": "Adam Pfister",

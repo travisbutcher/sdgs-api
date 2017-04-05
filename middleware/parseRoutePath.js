@@ -1,75 +1,184 @@
+const parseUrl = require('parseurl');
+
 module.exports = function (req, res, next) {
-  const originalUrl = req.originalUrl;
-  const parts = originalUrl.split('/').filter( part => part !== '' && part !== 'sdgs' );
+  // const incomingParsedUrl = parseUrl(req);
+  const baseUrl = `${req.baseUrl}${req.path}`;
+  const parts = baseUrl.split('/').filter( part => part !== '' && part !== 'sdgs' );
 
   let parsed = {};
-  if (req.originalUrl.indexOf('FeatureServer') === -1) {
-    parsed = parsePartsForJsonApi(originalUrl, parts, req.query);
+  if (baseUrl.indexOf('FeatureServer') === -1) {
+    parsed = parsePartsForJsonApi(parts, req.query);
   } else {
     parsed = {
-      originalUrl,
-      id: parts[1],
-      type: parts[0]
+      baseRequest: {
+        type: parts[0],
+        id: parts[1]
+      }
     };
   }
 
   req.parsedParts = parsed;
 
+  console.log('req.parsedParts', req.parsedParts);
+
   next();
 }
 
-function parsePartsForJsonApi(inUrl, parts, query) {
+function parsePartsForJsonApi (parts, query) {
+  let obj = { baseElements: {}, baseRequest: {} }, typeName;
 
-  if (inUrl.indexOf('?') === -1) {
-    originalUrl = inUrl;
-  } else {
-    originalUrl = inUrl.substr(0,inUrl.indexOf('?'));
-    if (query.include) {
-      req.includes = query.include.split(',');
-    }
-  }
+  parts.forEach( (part, index) => {
 
-  const firstOne = parts[0];
-  const lastOne = parts[parts.length-1];
-  const secondToLastOne = parts[parts.length-2];
+    if (part === 'goals' ||
+        part === 'targets' ||
+        part === 'indicators' ||
+        part === 'series') {
 
-  let type = lastOne, id, filter, parentType, parentId;
-
-  const len = parts.length;
-
-  if (len === 1) {
-    id = 'all';
-    type = parts[0];
-  } else {
-    id = 'all';
-    type = lastOne;
-    parentId = secondToLastOne;
-
-    if (lastOne === 'targets') {
-      parentType = 'goals';
-      filter = {field: 'goal_id', value: parentId};
-    } else if (lastOne === 'indicators') {
-      parentType = 'targets';
-      filter = {field: 'target_id', value: parentId};
-    } else if (lastOne === 'series') {
-      parentType = 'indicators';
-      filter = {field: 'indicator_id', value: parentId};
+      typeName = (part === 'series') ? 'series' : singluarize(part);
+      obj.baseElements[part] = true;
+      obj.baseElements[`${typeName}_id`] = parts[index+1];
+      obj.baseRequest.type = part;
+      obj.baseRequest.id = 'all';
     } else {
-      // id
-      id = lastOne;
-      type = secondToLastOne;
-      parentId = parts[parts.indexOf(secondToLastOne)-1] || id;
-      parentType = parts[parts.indexOf(secondToLastOne)-2] || type;
+      obj.baseRequest.id = part;
+    }
+
+  });
+
+  let filter, baseElements = obj.baseElements;
+  if (obj.baseRequest.type === 'targets' && baseElements.goal_id !== undefined && baseElements.target_id === undefined) {
+    filter = {};
+    filter.field = 'goal_id';
+    filter.value = baseElements.goal_id;
+  } else if (obj.baseRequest.type === 'indicators' && baseElements.target_id !== undefined && baseElements.indicator_id === undefined) {
+    filter = {};
+    filter.field = 'target_id';
+    filter.value = baseElements.target_id;
+  } else if (obj.baseRequest.type === 'series' && baseElements.indicator_id !== undefined && baseElements.series_id === undefined) {
+    filter = {};
+    filter.field = 'indicator_id';
+    filter.value = baseElements.indicator_id;
+  }
+
+  if (filter) {
+    obj.baseRequest.filter = filter;
+  }
+
+  if (parts.length === 1) {
+    obj.baseRequest.id = 'all';
+  }
+
+  if (query) {
+    obj.baseQuery = query;
+
+    if (query.include) {
+      obj.includedRequests = getIncludedRequests(obj, query.include.split(','));
     }
   }
 
-  return {
-    originalUrl,
-    parts,
-    id,
-    type,
-    filter,
-    parentId,
-    parentType
-  };
+  return obj;
+}
+
+function validateIncludes (rawIncludes) {
+  const validIncludes = ['goals', 'targets', 'indicators', 'series'];
+  return rawIncludes
+    .map( (include) => include.trim() )
+    .filter( (include) => validIncludes.indexOf(include) > -1 );
+}
+
+function getIncludedRequests (baseObj, rawIncludes) {
+  const includes = validateIncludes(rawIncludes);
+  console.log('includes', includes);
+  let requests = includes.map( (inc) => {
+    let obj = {
+      type: inc,
+      id: 'all'
+    };
+    // console.log('inc', inc);
+    const filter = getFilterForInclude(baseObj, inc);
+
+    if (filter) {
+      obj.filter = filter;
+    }
+
+    return obj;
+  });
+
+  return requests;
+}
+
+function getFilterForInclude (baseObj, inc) {
+
+  const filter = getFieldFilterForInclude(inc, baseObj.baseElements);
+
+  if (filter.field === undefined || filter.value === undefined) {
+    return undefined;
+  }
+
+  console.log(`filter for ${inc}: `, filter);
+
+  return filter;
+}
+
+function getFieldFilterForInclude (includeType, urlElements) {
+  let field, value, filter;
+
+  if (includeType === 'goals') {
+    field = 'id';
+    if (urlElements['indicator_id']) {
+      value = urlElements['indicator_id'].substr(0, urlElements['indicator_id'].indexOf('.'));
+    } else if (urlElements['target_id']) {
+      value = urlElements['target_id'].substr(0, urlElements['target_id'].indexOf('.'));
+    } else if (urlElements['series_id']) {
+      field = { preFilter:'goal_id', postFilter: 'id' };
+      value = false;
+    } else if (urlElements['goal_id']) {
+      value = urlElements['goal_id'];
+    }
+  } else if (includeType === 'targets') {
+    if (urlElements['indicator_id']) {
+      value = urlElements['indicator_id'].substr(0, urlElements['indicator_id'].lastIndexOf('.'));
+      field = 'id';
+    } else if (urlElements['target_id']) {
+      field = 'id';
+      value = urlElements['target_id'];
+    } else if (urlElements['series_id']) {
+      field = { preFilter:'target_id', postFilter: 'id' };
+      value = false;
+    } else if (urlElements['goal_id']) {
+      field = 'goal_id';
+      value = urlElements['goal_id'];
+    }
+  } else if (includeType === 'indicators') {
+    if (urlElements['target_id']) {
+      field = 'target_id';
+      value = urlElements['target_id'];
+    } else if (urlElements['goal_id']) {
+      field = 'goal_id';
+      value = urlElements['goal_id'];
+    } else if (urlElements['series_id']) {
+      field = { preFilter:'indicator_id', postFilter: 'id' };
+      value = false;
+    } else if (urlElements['indicator_id']) {
+      field = 'id';
+      value = urlElements['indicator_id'];
+    }
+  } else if (includeType === 'series') {
+    if (urlElements['indicator_id']) {
+      value = urlElements['indicator_id'];
+      field = 'indicator_id';
+    } else if (urlElements['series_id']) {
+      field = 'id';
+      value = urlElements['series_id'];
+    } else if (urlElements['target_id']) {
+      value = urlElements['target_id'];
+      field = 'target_id';
+    }
+  }
+
+  return {field, value};
+}
+
+function singluarize(str) {
+  return str.substring(0, str.length - 1);
 }
