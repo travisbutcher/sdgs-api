@@ -13,12 +13,19 @@ const Koop = require('koop');
 const koop = new Koop();
 
 const sdgValidRoutes = require('./middleware/sdgValidRoutes.js');
-const githubGetter = require('./middleware/githubGetter.js');
-const parseRoutePath = require('./middleware/parseRoutePath.js')
+const parseRoutePath = require('./middleware/parseRoutePath.js');
+const githubDataSource = require('./middleware/githubDataSource.js');
+const seriesDataLoader = require('./middleware/seriesDataLoader.js');
 
-// TODO: ask Daniel for help implementing this
-// const cache = require('koop-cache-memory');
-// koop.register(cache);
+const isNotFeatureServerRoute = function(path, middleware) {
+  return function(req, res, next) {
+    if (req.path.indexOf('FeatureServer') !== -1) {
+        return next();
+    } else {
+        return middleware(req, res, next);
+    }
+  };
+};
 
 // Register the SDG Provider with Koop
 const provider = require('./')
@@ -35,7 +42,15 @@ app.use('/sdgs/:type/:id', sdgValidRoutes);
 app.use('/sdgs/:type/:id?', parseRoutePath);
 
 // pre-load data from Github and append to `req` object
-app.use('/sdgs/:type/:id?/:first_level?/:first_level_id?/:second_level?/:second_level_id?/:third_level?/:third_level_id?', githubGetter);
+app.use(
+  isNotFeatureServerRoute(
+    '/sdgs/:type/:id?/:first_level?/:first_level_id?/:second_level?/:second_level_id?/:third_level?/:third_level_id?',
+    githubDataSource
+  )
+);
+
+// series data loader
+app.use('/sdgs/series/:series_id/FeatureServer', seriesDataLoader);
 
 app.use(koop.server);
 

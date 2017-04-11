@@ -1,7 +1,4 @@
-const parseUrl = require('parseurl');
-
 module.exports = function (req, res, next) {
-  // const incomingParsedUrl = parseUrl(req);
   const baseUrl = `${req.baseUrl}${req.path}`;
   const parts = baseUrl.split('/').filter( part => part !== '' && part !== 'sdgs' );
 
@@ -11,6 +8,7 @@ module.exports = function (req, res, next) {
   } else {
     parsed = {
       baseRequest: {
+        isFeatureServer: true,
         type: parts[0],
         id: parts[1]
       }
@@ -19,7 +17,7 @@ module.exports = function (req, res, next) {
 
   req.parsedParts = parsed;
 
-  console.log('req.parsedParts', req.parsedParts);
+  // console.log('req.parsedParts', req.parsedParts);
 
   next();
 }

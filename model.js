@@ -177,9 +177,9 @@ function buildMeta (req, len) {
 Model.prototype.getData = function (req, callback) {
   const data = req.rawData;
 
-  const resource = translate(data, {type: req.rawDataType});
+  // const resource = translate(data, {type: req.rawDataType});
 
-  callback(null, resource);
+  callback(null, data);
 }
 
 function translate (input, options) {
@@ -187,11 +187,11 @@ function translate (input, options) {
 
   return {
     type: 'FeatureCollection',
-    features: formatFeatures(input, type)
+    features: formatFeatures(input, type, options.geometry)
   }
 }
 
-function formatFeatures (raw, type) {
+function formatFeatures (raw, type, geometry) {
   let data = [];
   let feature;
 
@@ -201,6 +201,10 @@ function formatFeatures (raw, type) {
         type: 'Feature',
         properties: getFeatureAttributes(raw[key], type)
       };
+
+      if (geometry) {
+        feature.geometry = getFeatureGeometry(feature.properties.refarea);
+      }
 
       data.push( feature );
     });
@@ -241,12 +245,9 @@ function getFeatureAttributes (obj, type) {
     atts.goal_id = obj.goal_id;
     atts.is_official = obj.is_official;
     atts.show = obj.show;
-
-    // TODO: snatch geometry for countries
-
   }
 
-  return atts;
+  return Object.assign(atts, obj);
 }
 
 /**
