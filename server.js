@@ -7,6 +7,7 @@ process.on('SIGTERM', () => process.exit(0))
 const express = require('express');
 const app = express();
 const router = express.Router();
+const path = require('path');
 
 // Initialize Koop
 const Koop = require('koop');
@@ -20,9 +21,9 @@ const seriesDataLoader = require('./middleware/seriesDataLoader.js');
 const isNotFeatureServerRoute = function(path, middleware) {
   return function(req, res, next) {
     if (req.path.indexOf('FeatureServer') !== -1) {
-        return next();
+      return next();
     } else {
-        return middleware(req, res, next);
+      return middleware(req, res, next);
     }
   };
 };

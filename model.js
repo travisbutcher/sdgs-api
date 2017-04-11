@@ -110,6 +110,7 @@ function getJsonApiAttributes (obj, sources, type) {
   if (type === 'goal') {
     atts.title = obj.title;
     atts.colorInfo = obj.color_info;
+    atts.icon_url = obj.icon_url
   } else if (type === 'target') {
     atts.goal_id = obj.goal_id;
   } else if (type === 'indicator') {
