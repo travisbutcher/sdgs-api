@@ -7,7 +7,8 @@ module.exports = function (req, res, next) {
   const type = req.params.type;
 
   if (type === 'goals') {
-    validation = validateGoals(req.params.id);
+    console.log(req.params)
+    validation = true; // validateGoals(req.params.id);
   } else if (type === 'targets') {
 
   } else if (type === 'indicators') {
@@ -15,24 +16,26 @@ module.exports = function (req, res, next) {
   } else if (type === 'series') {
 
   }
+  next();
 
-  if (validation.isValid) {
+  /*if (validation.isValid) {
     next();
   } else {
     res
       .status(validation.error.code)
       .send(validation.error);
-  }
+  }*/
 }
 
 function validateGoals(id) {
   let response = {
-    isValid: false,
+    isValid: true,
     error: {
       message: 'error',
       code: 500
     }
   };
+  return response;
 
   if (isPositiveInteger(parseInt(id))) {
     const num = parseInt(id);

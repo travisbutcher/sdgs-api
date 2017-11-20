@@ -3,13 +3,14 @@ require('promise-hash');
 const request = require('request').defaults({gzip: true, json: true});
 
 module.exports = function (req, res, next) {
-  const githubBaseUrl = 'https://raw.githubusercontent.com/UNStats-SDGs/sdgs-data/master';
+  const githubBaseUrl = 'https://unstats.un.org/SDGAPI/v1/sdg/Goal/Data?goal=1';
   const githubBaseUrlSuffix = '.json?raw=true';
 
   let lang = 'en';
   if (req.query && req.query.lang) {
     lang = req.query.lang;
   }
+
 
   const baseRequest = req.parsedParts.baseRequest;
 

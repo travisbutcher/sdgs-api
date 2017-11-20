@@ -20,6 +20,8 @@ const seriesDataLoader = require('./middleware/seriesDataLoader.js');
 
 const isNotFeatureServerRoute = function(path, middleware) {
   return function(req, res, next) {
+
+    console.log(req.path)
     if (req.path.indexOf('FeatureServer') !== -1) {
       return next();
     } else {
