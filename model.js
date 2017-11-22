@@ -183,6 +183,7 @@ Model.prototype.getData = function (req, callback) {
   const data = req.rawData;
 
   const resource = translate(data, {type: req.rawDataType});
+  console.log(resource)
   callback(null, resource);
 }
 
