@@ -20,18 +20,14 @@ module.exports = function (req, res, next) {
       var fc = raw
 
       var output
-      //if(req.query.geometry) {
-        //Convert the Features to GeoJSON
-        var output = GeoJSON.fromEsri(fc)
-        output.filtersApplied = {}
-        output.filtersApplied["all"] = true
-        output.metadata = {}
-        output.metadata["transform"] = raw.transform
-        console.log(output.metadata)
-      //}
-      //else
-      //  output = fc
-
+      var output = GeoJSON.fromEsri(fc)
+      output.filtersApplied = {}
+      output.filtersApplied["all"] = true
+      output.metadata = {}
+      output.metadata["transform"] = raw.transform
+      output.metadata["capabilities"] = {}
+      output.metadata.capabilities["quantization"] = true
+      console.log(output.metadata.capabilities)
       req.rawData = output
       next();
     });

@@ -182,7 +182,9 @@ Model.prototype.getData = function (req, callback) {
   const data = req.rawData;
   data.filtersApplied = {}
   data.filtersApplied["all"] = true
-  const resource = data //translate(data, {type: req.rawDataType});
+  data.capabilities = {}
+  data.capabilities["quantization"] = true
+  const resource = data
   callback(null, resource);
 }
 

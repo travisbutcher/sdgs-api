@@ -20,7 +20,7 @@
     "koop-cache-memory": "^1.1.0",
     "promise-hash": "^1.2.0",
     "request": "^2.79.0",
-    "featureserver": "^2.8.0"
+    "featureserver": "^2.9.0"
   },
   "author": "Adam Pfister",
   "license": "Apache-2.0",
