@@ -1,25 +1,43 @@
 let BOUNDARIES;
 
+const GeoJSON = require('esri-to-geojson')
 const request = require('request').defaults({gzip: true, json: true});
 
 module.exports = function (req, res, next) {
+    console.log(req.query)
+    var boundary_url = 'https://services7.arcgis.com/gp50Ao2knMlOM89z/arcgis/rest/services/SDG_M49_4326/FeatureServer/0/query?where=1=1&outFields=*'
+    //if(req.query !== {}) {
+      if(req.query.geometry) {
+        boundary_url += '&f=json'
+        if(req.query.quantizationParameters) boundary_url +='&quantizationParameters=' + req.query.quantizationParameters
+        boundary_url += '&geometry=' + req.query.geometry
+        boundary_url += '&returnGeometry=true&spatialRel=esriSpatialRelIntersects&geometryType=esriGeometryEnvelope&inSR=102100&outFields=*&outSR=102100'
+      } else boundary_url += '&f=json&returnGeometry=false'
 
-  if (!BOUNDARIES) {
-    console.log('no boundaries!');
-    const boundary_url = 'https://services7.arcgis.com/gp50Ao2knMlOM89z/arcgis/rest/services/SDG_AREA/FeatureServer/0/query?f=geojson&returnGeometry=true&spatialRel=esriSpatialRelIntersects&geometry=%7B%22xmin%22%3A-20037508.342788905%2C%22ymin%22%3A-20037508.342779063%2C%22xmax%22%3A20037508.342779063%2C%22ymax%22%3A20037508.342788905%2C%22spatialReference%22%3A%7B%22wkid%22%3A102100%2C%22latestWkid%22%3A3857%7D%7D&geometryType=esriGeometryEnvelope&inSR=102100&outFields=*&outSR=102100&resultType=tile&quantizationParameters=%7B%22mode%22%3A%22view%22%2C%22originPosition%22%3A%22upperLeft%22%2C%22tolerance%22%3A78271.51696399994%2C%22extent%22%3A%7B%22type%22%3A%22extent%22%2C%22xmin%22%3A-180.00000543699997%2C%22ymin%22%3A-89.90000152599998%2C%22xmax%22%3A180.0000000000001%2C%22ymax%22%3A83.62741851600003%2C%22spatialReference%22%3A%7B%22wkid%22%3A4326%2C%22latestWkid%22%3A4326%7D%7D%7D'
+    console.log(boundary_url)
     getFromGithub(boundary_url, (err, raw) => {
       if (err) return res.status(err.status_code).send(err);
-      BOUNDARIES = raw;
-      console.log(raw.features[0])
-      getData(req, res, next);
+      var fc = raw
+
+      var output
+      //if(req.query.geometry) {
+        //Convert the Features to GeoJSON
+        var output = GeoJSON.fromEsri(fc)
+        output.filtersApplied = {}
+        output.filtersApplied["all"] = true
+        output.metadata = {}
+        output.metadata["transform"] = raw.transform
+        console.log(output.metadata)
+      //}
+      //else
+      //  output = fc
+
+      req.rawData = output
+      next();
     });
-  } else {
-    getData(req, res, next);
-  }
 }
 
 function getData (req, res, next) {
-
   const series_id = req.params.series_id;
   const refarea = req.params.refarea;
 
@@ -34,7 +52,9 @@ function getData (req, res, next) {
     if (err) return res.status(err.status_code).send(err);
 
 try{
-
+      req.rawData = BOUNDARIES //.features;
+  next();
+/*
   features = []
   let i = 0
     raw.data.forEach( (data_element) => {
@@ -52,6 +72,7 @@ try{
       data_element.attributes= null
       data_element.dimensions= null
       for (var x = 0, len = BOUNDARIES.features.length; x < len; x++) {
+        console.log(BOUNDARIES.features[0])
         if(data_element.geoAreaCode == BOUNDARIES.features[x].properties["M49"]){
           feature.geometry = BOUNDARIES.features[x].geometry
           break;
@@ -66,8 +87,9 @@ try{
     });
 
     req.rawData = features;
+    console.log(features)
     console.log("end data checks")
-    next();
+    next();*/
   }catch (e) {
   console.log(e);
 }
@@ -81,7 +103,7 @@ function getFromGithub (url, callback) {
       return callback({
         message: 'error requesting data from GitHub',
         github_request_url: url,
-        status_code: res.statusCode
+        status_code: 500
       });
     }
     callback(null, body);

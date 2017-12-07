@@ -14,6 +14,7 @@
   "dependencies": {
     "config": "^1.25.1",
     "dotenv": "^4.0.0",
+    "esri-to-geojson": "^1.0.3",
     "is-positive-integer": "^1.1.1",
     "koop": "^3.4.0",
     "koop-cache-memory": "^1.1.0",

@@ -86,7 +86,7 @@ function translateToJSONAPI (type, sources, raw) {
     data = [];
 
     Object.keys(raw).forEach((key) => {
-      console.log(key)
+      //console.log(key)
       data.push({
         id: raw[key].id,
         type: singularType,
@@ -179,41 +179,35 @@ function buildMeta (req, len) {
 */
 
 Model.prototype.getData = function (req, callback) {
-  console.log("get data")
   const data = req.rawData;
-
-  const resource = translate(data, {type: req.rawDataType});
-  console.log(resource)
+  data.filtersApplied = {}
+  data.filtersApplied["all"] = true
+  const resource = data //translate(data, {type: req.rawDataType});
   callback(null, resource);
 }
 
 function translate (input, options) {
-  console.log(options)
-  const type = (options.type !== 'series') ? singluarize(options.type) : options.type;
-
   return {
     type: 'FeatureCollection',
-    features: formatFeatures(input, type, options.geometry)
+    features:  input.features,
+    filtersApplied: {all: true}
   }
 }
 
 function formatFeatures (raw, type, geometry) {
-  console.log("formatFeatures")
   let data = [];
   let feature;
 
   if (raw.id === undefined) {
     console.log('processing raw')
     Object.keys(raw).forEach((key) => {
-      console.log(key)
       feature = {
         "type": "Feature",
         "id":  parseInt(raw[key].id),
-        "properties": raw[key].properties, //getFeatureAttributes(raw[key], type),
+        "properties": raw[key].properties,
         "geometry": raw[key].geometry
       };
 
-      console.log(feature)
       data.push( feature );
     });
   } else {
@@ -223,7 +217,6 @@ function formatFeatures (raw, type, geometry) {
     });
   }
 
-  //console.log(data)
   return data;
 }
 
