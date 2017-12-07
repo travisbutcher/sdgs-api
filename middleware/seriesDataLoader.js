@@ -5,7 +5,7 @@ const request = require('request').defaults({gzip: true, json: true});
 
 module.exports = function (req, res, next) {
     console.log(req.query)
-    var boundary_url = 'https://services7.arcgis.com/gp50Ao2knMlOM89z/arcgis/rest/services/SDG_M49_4326/FeatureServer/0/query?where=1=1&outFields=*'
+    var boundary_url = 'https://services7.arcgis.com/gp50Ao2knMlOM89z/arcgis/rest/services/SDG_AREA/FeatureServer/0/query?where=1=1&outFields=*'
     //if(req.query !== {}) {
       if(req.query.geometry) {
         boundary_url += '&f=json'
