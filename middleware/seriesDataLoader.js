@@ -25,9 +25,9 @@ module.exports = function (req, res, next) {
       output.filtersApplied["all"] = true
       output.metadata = {}
       output.metadata["transform"] = raw.transform
-      output.metadata["capabilities"] = {}
-      output.metadata.capabilities["quantization"] = true
-      console.log(output.metadata.capabilities)
+      output["capabilities"] = {}
+      output.capabilities["quantization"] = true
+      console.log(output.capabilities)
       req.rawData = output
       next();
     });
