@@ -7,13 +7,14 @@ module.exports = function (req, res, next) {
     console.log(req.query)
     var boundary_url = 'https://services7.arcgis.com/gp50Ao2knMlOM89z/arcgis/rest/services/SDG_AREA/FeatureServer/0/query?where=1=1&outFields=*'
     //if(req.query !== {}) {
-      if(req.query.geometry) {
+      if(req.query) {
         boundary_url += '&f=json'
         if(req.query.quantizationParameters) boundary_url +='&quantizationParameters=' + req.query.quantizationParameters
         if(req.query.geometry) boundary_url += '&geometry=' + req.query.geometry
-        boundary_url += '&returnGeometry=true&spatialRel=esriSpatialRelIntersects&geometryType=esriGeometryEnvelope&inSR=102100&outFields=*&outSR=102100'
+        if(req.query.returnGeometry) boundary_url += '&returnGeometry=' + req.query.returnGeometry
+        boundary_url += '&spatialRel=esriSpatialRelIntersects&geometryType=esriGeometryEnvelope&inSR=102100&outSR=102100'
       } else boundary_url += '&f=geojson&returnGeometry=true&resultRecordCount=1'
-
+ 
     console.log(boundary_url)
     getFromGithub(boundary_url, (err, raw) => {
       if (err) return res.status(err.status_code).send(err);
