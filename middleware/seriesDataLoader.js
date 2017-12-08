@@ -5,35 +5,33 @@ const request = require('request').defaults({gzip: true, json: true});
 
 module.exports = function (req, res, next) {
     console.log(req.query)
-    var boundary_url = 'https://services7.arcgis.com/gp50Ao2knMlOM89z/arcgis/rest/services/SDG_M49_4326/FeatureServer/0/query?outFields=*&where=1=1'
-    //if(req.query !== {}) {
-      if(req.query && Object.keys(req.query).length > 1) {
-        //If they only key is the format the do not not query geometry
-        Object.keys(req.query).forEach(function(key) {
-          var val = req.query[key];
-          console.log("key:" + key + " value: " + val)
-          //Append all the keys to the json
-          if(key === 'f') boundary_url += '&f=json'
-          //else if(key === 'where') boundary_url += '&where=1=1'
-          else boundary_url += "&" + key + "=" + val
-        });
-        
-        //if(req.query.quantizationParameters) boundary_url +='&quantizationParameters=' + req.query.quantizationParameters
-        //if(req.query.geometry) boundary_url += '&geometry=' + req.query.geometry
-        //if(req.query.returnGeometry) boundary_url += '&returnGeometry=' + req.query.returnGeometry
-        //boundary_url += '&spatialRel=esriSpatialRelIntersects&geometryType=esriGeometryEnvelope&inSR=102100&outSR=102100'
-      } else boundary_url += '&f=json&returnGeometry=true&resultRecordCount=1'
- 
+    var boundary_url = 'https://services7.arcgis.com/gp50Ao2knMlOM89z/arcgis/rest/services/SDG_AREA/FeatureServer/0/query?outFields=*&where=1=1'
+
+    Object.keys(req.query).forEach(function(key) {
+      var val = req.query[key];
+      console.log("key:" + key + " value: " + val)
+      //Append all the keys to the json
+      if(key === 'f') boundary_url += '&f=json'
+      else if (key === 'callback') {}
+      //else if(key === 'where') boundary_url += '&where=1=1'
+      else boundary_url += "&" + key + "=" + val
+    });
+
+    //Do not return the Geometry unless it is requested
+    if(boundary_url.indexOf("quantization") === -1)
+      boundary_url += "&returnGeometry=false"
+
     console.log(boundary_url)
     getFromGithub(boundary_url, (err, raw) => {
       if (err) return res.status(err.status_code).send(err);
       var fc = raw
-      console.log(raw)
-      var output
       var output = GeoJSON.fromEsri(fc)
       output["filtersApplied"] = {"all": true}
       output.metadata = {}
-      output.metadata["extent"] = {"xmin" : -20037507.067161843, "ymin" : -30240971.958386146, "xmax" : 20037507.067161843, "ymax" : 18422214.740178905, "spatialReference" : {"wkid" : 102100, "latestWkid" : 3857}}
+      output.metadata["name"] = "Koop a doop"
+      output.metadata["description"] = "This will come from the SDG Metadata Service"
+      output.metadata["extent"] = raw.extent ? raw.extent : {"xmin" : -20037507.067161843, "ymin" : -30240971.958386146, "xmax" : 20037507.067161843, "ymax" : 18422214.740178905, "spatialReference" : {"wkid" : 102100, "latestWkid" : 3857}}
+      output.metadata["spatialReference"] = raw.spatialReference ? raw.spatialReference : {"wkid" : 102100, "latestWkid" : 3857}
       output.metadata["transform"] = raw.transform
       output["capabilities"] = {"quantization": true}
       console.log(output.capabilities)
