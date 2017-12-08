@@ -10,17 +10,17 @@ module.exports = function (req, res, next) {
       if(req.query.geometry) {
         boundary_url += '&f=json'
         if(req.query.quantizationParameters) boundary_url +='&quantizationParameters=' + req.query.quantizationParameters
-        boundary_url += '&geometry=' + req.query.geometry
+        if(req.query.geometry) boundary_url += '&geometry=' + req.query.geometry
         boundary_url += '&returnGeometry=true&spatialRel=esriSpatialRelIntersects&geometryType=esriGeometryEnvelope&inSR=102100&outFields=*&outSR=102100'
-      } else boundary_url += '&f=json&returnGeometry=false'
+      } else boundary_url += '&f=geojson&returnGeometry=true&resultRecordCount=1'
 
     console.log(boundary_url)
     getFromGithub(boundary_url, (err, raw) => {
       if (err) return res.status(err.status_code).send(err);
       var fc = raw
-
+      console.log(raw)
       var output
-      var output = GeoJSON.fromEsri(fc)
+      var output = fc //GeoJSON.fromEsri(fc)
       output.filtersApplied = {}
       output.filtersApplied["all"] = true
       output.metadata = {}
