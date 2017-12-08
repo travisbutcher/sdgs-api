@@ -5,17 +5,17 @@ const request = require('request').defaults({gzip: true, json: true});
 
 module.exports = function (req, res, next) {
     console.log(req.query)
-    var boundary_url = 'https://services7.arcgis.com/gp50Ao2knMlOM89z/arcgis/rest/services/SDG_AREA/FeatureServer/0/query?outFields=*&where=1=1'
+    var boundary_url = 'https://services7.arcgis.com/gp50Ao2knMlOM89z/arcgis/rest/services/SDG_AREA/FeatureServer/0/query?f=json&outFields=*&where=1=1'
 
-    Object.keys(req.query).forEach(function(key) {
-      var val = req.query[key];
-      console.log("key:" + key + " value: " + val)
-      //Append all the keys to the json
-      if(key === 'f') boundary_url += '&f=json'
-      else if (key === 'callback') {}
-      //else if(key === 'where') boundary_url += '&where=1=1'
-      else boundary_url += "&" + key + "=" + val
-    });
+    if(req.query){
+      Object.keys(req.query).forEach(function(key) {
+        var val = req.query[key];
+        console.log("key:" + key + " value: " + val)
+        //Append all the keys to the json (Excpect Format and callback)
+        if(key === 'f' || key === 'callback') {}
+        else boundary_url += "&" + key + "=" + val
+      });
+    }
 
     //Do not return the Geometry unless it is requested
     if(boundary_url.indexOf("quantization") === -1)
@@ -32,9 +32,9 @@ module.exports = function (req, res, next) {
       output.metadata["description"] = "This will come from the SDG Metadata Service"
       output.metadata["extent"] = raw.extent ? raw.extent : {"xmin" : -20037507.067161843, "ymin" : -30240971.958386146, "xmax" : 20037507.067161843, "ymax" : 18422214.740178905, "spatialReference" : {"wkid" : 102100, "latestWkid" : 3857}}
       output.metadata["spatialReference"] = raw.spatialReference ? raw.spatialReference : {"wkid" : 102100, "latestWkid" : 3857}
-      output.metadata["transform"] = raw.transform
+      if(raw.transform) output.metadata["transform"] = raw.transform
       output["capabilities"] = {"quantization": true}
-      console.log(output.capabilities)
+      console.log(output)
       req.rawData = output
       next();
     });
