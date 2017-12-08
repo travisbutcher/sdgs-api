@@ -19,7 +19,7 @@ module.exports = function (req, res, next) {
 
     //Do not return the Geometry unless it is requested
     if(boundary_url.indexOf("quantization") === -1)
-      boundary_url += "&returnGeometry=false"
+      boundary_url += "&quantizationParameters=" + '{"mode":"view","originPosition":"upperLeft","tolerance":19567.87924099992,"extent":{"type":"extent","xmin":-20037507.067161843,"ymin":-30240971.958386146,"xmax":20037507.067161843,"ymax":18422214.740178905,"spatialReference":{"wkid":102100,"latestWkid":3857}}}'
 
     console.log(boundary_url)
     getFromGithub(boundary_url, (err, raw) => {
@@ -34,7 +34,9 @@ module.exports = function (req, res, next) {
       output.metadata["spatialReference"] = raw.spatialReference ? raw.spatialReference : {"wkid" : 102100, "latestWkid" : 3857}
       if(raw.transform) output.metadata["transform"] = raw.transform
       output["capabilities"] = {"quantization": true}
-      console.log(output)
+      console.log(output.metadata)
+      console.log(output.capabilities)
+      console.log(output.filtersApplied)
       req.rawData = output
       next();
     });
