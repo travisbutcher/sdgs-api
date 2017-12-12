@@ -13,7 +13,7 @@ module.exports = function (req, res, next) {
         var val = req.query[key];
         console.log("key:" + key + " value: " + val)
         //Append all the keys to the json (Excpect Format and callback)
-        if(key === 'f' || key === 'callback') {}
+        if(key === 'f' || key === 'callback' || key==='where' || key==='outFields' || key.toLowerCase()==='outsr') {}
         else boundary_url += "&" + key + "=" + val
       });
     }
