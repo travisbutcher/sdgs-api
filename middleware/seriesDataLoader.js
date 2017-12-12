@@ -5,6 +5,7 @@ const request = require('request').defaults({gzip: true, json: true});
 
 module.exports = function (req, res, next) {
     console.log(req.query)
+    const series_id = req.params.series_id;
     var boundary_url = 'https://services7.arcgis.com/gp50Ao2knMlOM89z/arcgis/rest/services/SDG_AREA/FeatureServer/0/query?f=json&outFields=*&where=1=1'
 
     if(req.query){
@@ -28,7 +29,7 @@ module.exports = function (req, res, next) {
       var output = GeoJSON.fromEsri(fc)
       output["filtersApplied"] = {"all": true}
       output.metadata = {}
-      output.metadata["name"] = "Koop a doop"
+      output.metadata["name"] = series_id
       output.metadata["description"] = "This will come from the SDG Metadata Service"
       output.metadata["extent"] = raw.extent ? raw.extent : {"xmin" : -20037507.067161843, "ymin" : -30240971.958386146, "xmax" : 20037507.067161843, "ymax" : 18422214.740178905, "spatialReference" : {"wkid" : 102100, "latestWkid" : 3857}}
       output.metadata["spatialReference"] = raw.spatialReference ? raw.spatialReference : {"wkid" : 102100, "latestWkid" : 3857}
