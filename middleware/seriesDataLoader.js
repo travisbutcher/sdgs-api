@@ -6,14 +6,14 @@ const request = require('request').defaults({gzip: true, json: true});
 module.exports = function (req, res, next) {
     console.log(req.query)
     const series_id = req.params.series_id;
-    var boundary_url = 'https://services7.arcgis.com/gp50Ao2knMlOM89z/arcgis/rest/services/SDG_AREA/FeatureServer/0/query?f=json&outFields=*&where=1=1'
+    var boundary_url = 'https://services7.arcgis.com/gp50Ao2knMlOM89z/arcgis/rest/services/SDG_AREA/FeatureServer/0/query?f=json'
 
     if(req.query){
       Object.keys(req.query).forEach(function(key) {
         var val = req.query[key];
         console.log("key:" + key + " value: " + val)
         //Append all the keys to the json (Excpect Format and callback)
-        if(key === 'f' || key === 'callback' || key==='where' || key==='outFields' || key.toLowerCase()==='outsr') {}
+        if(key === 'f' || key === 'callback') {}
         else boundary_url += "&" + key + "=" + val
       });
     }
@@ -23,7 +23,7 @@ module.exports = function (req, res, next) {
       boundary_url += "&quantizationParameters=" + '{"mode":"view","originPosition":"upperLeft","tolerance":19567.87924099992,"extent":{"type":"extent","xmin":-20037507.067161843,"ymin":-30240971.958386146,"xmax":20037507.067161843,"ymax":18422214.740178905,"spatialReference":{"wkid":102100,"latestWkid":3857}}}'
 
     console.log(boundary_url)
-    getFromGithub(boundary_url, (err, raw) => {
+    getArcGISOnlineGeometry(boundary_url, (err, raw) => {
       if (err) return res.status(err.status_code).send(err);
       var fc = raw
       var output = GeoJSON.fromEsri(fc)
@@ -103,12 +103,12 @@ try{
   });
 }
 
-function getFromGithub (url, callback) {
+function getArcGISOnlineGeometry (url, callback) {
   request(url,  (err, res, body) => {
     if (err || (res.statusCode > 400 && res.statusCode < 600)) {
       return callback({
-        message: 'error requesting data from GitHub',
-        github_request_url: url,
+        message: 'error requesting data from ArcGIS Online',
+        request_url: url,
         status_code: 500
       });
     }
