@@ -6,15 +6,15 @@ const request = require('request').defaults({gzip: true, json: true});
 module.exports = function (req, res, next) {
     console.log(req.query)
     const series_id = req.params.series_id;
-    var boundary_url = 'https://services7.arcgis.com/gp50Ao2knMlOM89z/arcgis/rest/services/SDG_AREA/FeatureServer/0/query?f=json'
+    var boundary_url = 'https://services7.arcgis.com/gp50Ao2knMlOM89z/arcgis/rest/services/SDG_AREA/FeatureServer/0/query?' //?f=geojson
 
     if(req.query){
       Object.keys(req.query).forEach(function(key) {
         var val = req.query[key];
-        console.log("key:" + key + " value: " + val)
+        //console.log("key:" + key + " value: " + val)
         //Append all the keys to the json (Excpect Format and callback)
-        if(key === 'f' || key === 'callback') {}
-        else boundary_url += "&" + key + "=" + val
+        if(key !== 'callback') //key === 'f' || 
+          boundary_url += "&" + key + "=" + val
       });
     }
 
@@ -28,11 +28,14 @@ module.exports = function (req, res, next) {
     if(boundary_url.toLowerCase().indexOf("outfields") === -1)
       boundary_url += "&outFields=*"
 
+    if(boundary_url.indexOf('f=') === -1)
+      boundary_url += "&f=json"
+
     console.log(boundary_url)
     getArcGISOnlineGeometry(boundary_url, (err, raw) => {
       if (err) return res.status(err.status_code).send(err);
       var fc = raw
-      var output = GeoJSON.fromEsri(fc)
+      var output = fc// GeoJSON.fromEsri(fc)
       console.log("this is the output:" + output)
       output["filtersApplied"] = {"all": true}
       output.metadata = {}
