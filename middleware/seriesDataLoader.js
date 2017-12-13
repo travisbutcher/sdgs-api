@@ -24,7 +24,10 @@ module.exports = function (req, res, next) {
 
     if(boundary_url.indexOf("where") === -1)
       boundary_url += "&where=1=1"
-    
+
+    if(boundary_url.toLowerCase().indexOf("outfields") === -1)
+      boundary_url += "&outFields=*"
+
     console.log(boundary_url)
     getArcGISOnlineGeometry(boundary_url, (err, raw) => {
       if (err) return res.status(err.status_code).send(err);
