@@ -22,11 +22,15 @@ module.exports = function (req, res, next) {
     if(boundary_url.indexOf("quantization") === -1)
       boundary_url += "&quantizationParameters=" + '{"mode":"view","originPosition":"upperLeft","tolerance":19567.87924099992,"extent":{"type":"extent","xmin":-20037507.067161843,"ymin":-30240971.958386146,"xmax":20037507.067161843,"ymax":18422214.740178905,"spatialReference":{"wkid":102100,"latestWkid":3857}}}'
 
+    if(boundary_url.indexOf("where") === -1)
+      boundary_url += "&where=1=1"
+    
     console.log(boundary_url)
     getArcGISOnlineGeometry(boundary_url, (err, raw) => {
       if (err) return res.status(err.status_code).send(err);
       var fc = raw
       var output = GeoJSON.fromEsri(fc)
+      console.log("this is the output:" + output)
       output["filtersApplied"] = {"all": true}
       output.metadata = {}
       output.metadata["name"] = series_id
