@@ -180,10 +180,6 @@ function buildMeta (req, len) {
 
 Model.prototype.getData = function (req, callback) {
   const data = req.rawData;
-  data.filtersApplied = {}
-  data.filtersApplied["all"] = true
-  data.capabilities = {}
-  data.capabilities["quantization"] = true
   const resource = data
   callback(null, resource);
 }

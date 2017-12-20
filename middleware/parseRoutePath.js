@@ -86,7 +86,6 @@ function validateIncludes (rawIncludes) {
 
 function getIncludedRequests (baseObj, rawIncludes) {
   const includes = validateIncludes(rawIncludes);
-  console.log('includes', includes);
   let requests = includes.map( (inc) => {
     let obj = {
       type: inc,
