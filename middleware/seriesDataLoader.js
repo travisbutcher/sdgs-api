@@ -3,10 +3,6 @@ let BOUNDARIES;
 const GeoJSON = require('esri-to-geojson')
 const request = require('request').defaults({gzip: true, json: true});
 var outputFields = []
-var esriJSON;
-var filters = {"all":true,"geometry": true, "projection": true, "where": false, "offset": true}
-var series_id;
-
 
 module.exports = function (req, res, next) {
   console.log("getting field data")
@@ -33,6 +29,7 @@ module.exports = function (req, res, next) {
 function getSpatialData(req,res,next){
     const series_id = req.params.series_id;
     var boundary_url = 'https://services7.arcgis.com/gp50Ao2knMlOM89z/arcgis/rest/services/SDG_AREA/FeatureServer/0/query?'
+    var filters = {"all":true,"geometry": true, "projection": true, "where": false, "offset": true}
 
     if(req.generateRenderer){
       filters.all = false
@@ -71,12 +68,12 @@ function getSpatialData(req,res,next){
 
     getDataFromURL(boundary_url, (err, raw) => {
       if (err) return res.status(err.status_code).send(err);
-      esriJSON = raw
+      var esriJSON = raw
       if(raw.features && raw.features.length !== 0){
-        getData(req, next)
+        getData(req, next, esriJSON, filters)
       }else{
         esriJSON = raw
-        pushOutput(req,next)
+        pushOutput(req,next,esriJSON, filters)
       }
     });
 }
@@ -112,7 +109,7 @@ function getMetaDataFields(data_element){
   return fields;
 }
 
-function pushOutput(req, next){
+function pushOutput(req, next, esriJSON, filters){
       console.log("running output")
       var output = esriJSON
       output["filtersApplied"] = filters
@@ -132,7 +129,7 @@ function pushOutput(req, next){
       next()
 }
 
-function getData (req, next) {
+function getData (req, next, esriJSON, filters) {
   var sdgBaseURL = "https://unstats.un.org/SDGAPI/v1/sdg/Series/PivotData?seriesCode=" + series_id
   //do we need data with this request?
   if(esriJSON.features["geometry"] !== null){
@@ -179,7 +176,7 @@ function getData (req, next) {
           }
         })
 
-        pushOutput(req, next)
+        pushOutput(req, next, esriJSON, filters)
       }
       catch (e) {
         console.log(e);
