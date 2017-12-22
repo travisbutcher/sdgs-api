@@ -35,7 +35,7 @@ module.exports = function (req, res, next) {
 function getSpatialData(req,res,next){
   try{
     const series_id = req.params.series_id;
-    var boundary_url = esriService + "/query?a=a"
+    var boundary_url = esriService + "/query?"
     var filters = {"all":true,"geometry": true, "projection": true, "where": false, "offset": true}
 
     if(req.generateRenderer){
@@ -59,7 +59,7 @@ function getSpatialData(req,res,next){
     }
 
     //Ensure at least some parameters are set to get a proper dataset back for processing
-    if(boundary_url.indexOf("quantization") === -1 && (req.query['returnGeometry'] && req.query['returnGeometry'] =='true'))
+    if(boundary_url.indexOf("quantization") === -1)
       boundary_url += "&quantizationParameters=" + '{"mode":"view","originPosition":"upperLeft","tolerance":19567.87924099992,"extent":{"type":"extent","xmin":-20037507.067161843,"ymin":-30240971.958386146,"xmax":20037507.067161843,"ymax":18422214.740178905,"spatialReference":{"wkid":102100,"latestWkid":3857}}}'
 
     if(boundary_url.indexOf("where") === -1)
