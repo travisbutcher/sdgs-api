@@ -145,24 +145,23 @@ function pushOutput(req, next, esriJSON, filters, series_id){
 
 function getData (req, next, esriJSON, filters, series_id) {
 
-try{
-  //do we need data with this request?
-  if(esriJSON.features){
-    //Get a list of the M49 codes to grab from the data
-    var m49 = []
-    esriJSON.features.forEach((feature) => {
+  try{
+    //do we need data with this request?
+    if(esriJSON.features){
+        //Get a list of the M49 codes to grab from the data
+        var m49 = []
+        esriJSON.features.forEach((feature) => {
         m49.push(feature.attributes["M49"])
-    })
+      })
 
-    if(m49.length === 0)
-    {
+      if(m49.length === 0)
+      {
         req.rawData = esriJSON
         next();
-    }
-        }
-    catch (e) {
-      console.log(e);
-    }
+      }
+    }     
+  } catch (e) {
+  console.log(e);
   }
 
   getDataFromURL(sdgBaseURL + "?seriesCode="+series_id +"&areaCode=" + m49.join() + "&pageSize=2000", (err, raw) => {
@@ -199,11 +198,10 @@ try{
         })
 
         pushOutput(req, next, esriJSON, filters,series_id)
-      }
-      catch (e) {
+      } catch (e) {
         console.log(e);
       }
-    });
+  })
 }
 
 function getFeatureValues(feature, data_element){
