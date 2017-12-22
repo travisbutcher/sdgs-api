@@ -169,23 +169,18 @@ function getData (req, next, esriJSON, filters, series_id) {
                         });
                       }
                       else{
-                        console.log("setting", key, val)
                         feature.attributes[key] = val
                       }
                     })
                     return false
                   }
                   else {
-                    //outputFields.forEach(function(field){
-                    //  feature.attributes[field.name] = ""
-                    //})
-                    return true;
+                      return true;
                   }
               });
             }
         })
 
-        console.log(esriJSON.features[10].attributes)
         pushOutput(req, next, esriJSON, filters,series_id)
       }
       catch (e) {
