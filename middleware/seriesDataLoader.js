@@ -8,26 +8,32 @@ var outputFields = []
 var outEsriFields = []
 
 module.exports = function (req, res, next) {
-  var series_id = req.params.series_id;
-  
-  if(outputFields.length == 0 && outEsriFields.length == 0){
-    getDataFromURL(sdgBaseURL + "?seriesCode=SI_POV_DAY1&areaCode=792&pageSize=1", (err, raw) => {
-      if (err) return res.status(err.status_code).send(err);
-      outputFields = getMetaDataFields(raw.data[0])
-      //Get the field data from ArcGIS Online Feature Service
-      getDataFromURL(esriService + "?f=json", (err, raw) => {
+  try{
+    var series_id = req.params.series_id;
+    
+    if(outputFields.length == 0 && outEsriFields.length == 0){
+      getDataFromURL(sdgBaseURL + "?seriesCode=SI_POV_DAY1&areaCode=792&pageSize=1", (err, raw) => {
         if (err) return res.status(err.status_code).send(err);
+        outputFields = getMetaDataFields(raw.data[0])
+        //Get the field data from ArcGIS Online Feature Service
+        getDataFromURL(esriService + "?f=json", (err, raw) => {
+          if (err) return res.status(err.status_code).send(err);
 
-        outEsriFields = raw["fields"].concat(outputFields)
-        getSpatialData(req,res,next)
+          outEsriFields = raw["fields"].concat(outputFields)
+          getSpatialData(req,res,next)
+        })
       })
-    })
+    }
+    else
+        getSpatialData(req,res,next) 
   }
-  else
-      getSpatialData(req,res,next) 
+  catch (e) {
+    console.log(e);
+  }
 }
 
 function getSpatialData(req,res,next){
+  try{
     const series_id = req.params.series_id;
     var boundary_url = esriService + "/query?a=a"
     var filters = {"all":true,"geometry": true, "projection": true, "where": false, "offset": true}
@@ -74,9 +80,14 @@ function getSpatialData(req,res,next){
         pushOutput(req,next,raw, filters,series_id)
       }
     });
+    }
+    catch (e) {
+      console.log(e);
+    }
 }
 
 function getMetaDataFields(data_element){
+  try{
   var fields = []
   var addedFields = []
   Object.keys(data_element).forEach(function(key) {
@@ -104,7 +115,10 @@ function getMetaDataFields(data_element){
       }
   })
 
-  return fields;
+  return fields;    }
+    catch (e) {
+      console.log(e);
+    }
 }
 
 function pushOutput(req, next, esriJSON, filters, series_id){
@@ -114,7 +128,7 @@ function pushOutput(req, next, esriJSON, filters, series_id){
       output["metadata"] = {}
       output["metadata"]["idField"] = "OBJECTID"
       output["metadata"]["name"] = series_id
-      output["metadata"]["description"] = "This will come from the SDG Metadata Service"
+      output["metadata"]["description"] = "This provides informmation for the Sustainable Development Goals related to series " + series_id
       output["metadata"]["geometryType"] = "Polygon"
       output["metadata"]["extent"] = esriJSON.extent ? esriJSON.extent : {"xmin" : -20037507.067161843, "ymin" : -30240971.958386146, "xmax" : 20037507.067161843, "ymax" : 18422214.740178905, "spatialReference" : {"wkid" : 102100, "latestWkid" : 3857}}
       output["metadata"]["spatialReference"] = esriJSON.spatialReference ? esriJSON.spatialReference : {"wkid" : 102100, "latestWkid" : 3857}
@@ -130,6 +144,8 @@ function pushOutput(req, next, esriJSON, filters, series_id){
 }
 
 function getData (req, next, esriJSON, filters, series_id) {
+
+try{
   //do we need data with this request?
   if(esriJSON.features){
     //Get a list of the M49 codes to grab from the data
@@ -142,6 +158,10 @@ function getData (req, next, esriJSON, filters, series_id) {
     {
         req.rawData = esriJSON
         next();
+    }
+        }
+    catch (e) {
+      console.log(e);
     }
   }
 
