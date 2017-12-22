@@ -2,24 +2,27 @@ let BOUNDARIES;
 
 const GeoJSON = require('esri-to-geojson')
 const request = require('request').defaults({gzip: true, json: true});
+const esriService = "https://services7.arcgis.com/gp50Ao2knMlOM89z/arcgis/rest/services/SDG_AREA/FeatureServer/0"
 var outputFields = []
+var outEsriFields = []
 
 module.exports = function (req, res, next) {
-  console.log("getting field data")
-  series_id = req.params.series_id;
-  var sdgBaseURL = "https://unstats.un.org/SDGAPI/v1/sdg/Series/PivotData?seriesCode=SI_POV_DAY1&areaCode=792&pageSize=1"
-  if(outputFields.length == 0){
+  var series_id = req.params.series_id;
+  
+  if(outputFields.length == 0 && outEsriFields.length == 0){
+    var sdgBaseURL = "https://unstats.un.org/SDGAPI/v1/sdg/Series/PivotData?seriesCode=SI_POV_DAY1&areaCode=792&pageSize=1"
     getDataFromURL(sdgBaseURL, (err, raw) => {
-    if (err) return res.status(err.status_code).send(err);
-      try{
+      if (err) return res.status(err.status_code).send(err);
+      outputFields = getMetaDataFields(raw.data[0])
+      //Get the field data from ArcGIS Online Feature Service
+      getDataFromURL(esriService + "?f=json", (err, raw) => {
         if (err) return res.status(err.status_code).send(err);
-        outputFields = getMetaDataFields(raw.data[0])
-        console.log(outputFields)
-        getSpatialData(req,res,next)    
-      }
-      catch (e) {
-        console.log(e);
-      }
+
+        outEsriFields = raw["fields"].concat(outputFields)
+        console.log(outEsriFields)
+        //console.log(outputFields)
+        getSpatialData(req,res,next)
+      })
     })
   }
   else
@@ -63,17 +66,13 @@ function getSpatialData(req,res,next){
 
     if(boundary_url.indexOf('f=') === -1)
       boundary_url += "&f=json"
-    console.log(boundary_url)
-
 
     getDataFromURL(boundary_url, (err, raw) => {
       if (err) return res.status(err.status_code).send(err);
-      var esriJSON = raw
       if(raw.features && raw.features.length !== 0){
-        getData(req, next, esriJSON, filters)
+        getData(req, next, raw, filters,series_id)
       }else{
-        esriJSON = raw
-        pushOutput(req,next,esriJSON, filters)
+        pushOutput(req,next,raw, filters,series_id)
       }
     });
 }
@@ -109,7 +108,7 @@ function getMetaDataFields(data_element){
   return fields;
 }
 
-function pushOutput(req, next, esriJSON, filters){
+function pushOutput(req, next, esriJSON, filters, series_id){
       console.log("running output")
       var output = esriJSON
       output["filtersApplied"] = filters
@@ -120,7 +119,7 @@ function pushOutput(req, next, esriJSON, filters){
       output["metadata"]["geometryType"] = "Polygon"
       output["metadata"]["extent"] = esriJSON.extent ? esriJSON.extent : {"xmin" : -20037507.067161843, "ymin" : -30240971.958386146, "xmax" : 20037507.067161843, "ymax" : 18422214.740178905, "spatialReference" : {"wkid" : 102100, "latestWkid" : 3857}}
       output["metadata"]["spatialReference"] = esriJSON.spatialReference ? esriJSON.spatialReference : {"wkid" : 102100, "latestWkid" : 3857}
-      var metaFields = esriJSON.fields.concat(outputFields)
+      var metaFields = 
       output["metadata"]["fields"] = metaFields
       if(esriJSON.transform) output["metadata"]["transform"] = esriJSON.transform
       output["capabilities"] = {"quantization": true}
@@ -129,15 +128,15 @@ function pushOutput(req, next, esriJSON, filters){
       next()
 }
 
-function getData (req, next, esriJSON, filters) {
+function getData (req, next, esriJSON, filters, series_id) {
   var sdgBaseURL = "https://unstats.un.org/SDGAPI/v1/sdg/Series/PivotData?seriesCode=" + series_id
   //do we need data with this request?
-  if(esriJSON.features["geometry"] !== null){
+  if(esriJSON.features){
     //Get a list of the M49 codes to grab from the data
     var m49 = []
-    for (var x = 0, len = esriJSON.features.length; x < len; x++) {
-      m49.push(esriJSON.features[x].attributes["M49"])
-    }
+    esriJSON.features.forEach((feature) => {
+        m49.push(feature.attributes["M49"])
+    })
 
     if(m49.length === 0)
     {
@@ -147,36 +146,47 @@ function getData (req, next, esriJSON, filters) {
 
     sdgBaseURL += "&areaCode=" + m49.join() + "&pageSize=2000"
   }
-  else{ 
-     sdgBaseURL += "&areaCode=792&pageSize=1"
-     console.log("just publish metadata")
-   }
 
   getDataFromURL(sdgBaseURL, (err, raw) => {
     if (err) return res.status(err.status_code).send(err);
 
     try{
-        if (err) return res.status(err.status_code).send(err);
         raw.data.forEach( (data_element) => {
-          console.log(data_element)
           var geocode = data_element["geoAreaCode"]
-          if(esriJSON.features){
-            esriJSON.features.every((feature) => {
-                if(feature["attributes"]["M49"] == geocode){
-                  getFeatureValues(feature,data_element)
-                  return false
-                }
-                else {
-                  outputFields.forEach(function(field){
-                    feature.attributes[field.name] = ""
-                  })
-                  return true;
-                }
-            });
-          }
+            if(esriJSON.features){
+              esriJSON.features.every((feature) => {
+                  if(feature["attributes"]["M49"] == geocode){
+                    console.log("Setting Feature Values")
+                    Object.keys(data_element).forEach(function(key) {
+                      var val = data_element[key];
+                      //Parse the Year Information
+                      if(key==='years')
+                      {
+                        var years = JSON.parse(val);
+                        Object.keys(years).forEach(function(yearKey) {
+                            var nameKey = "year_" + years[yearKey]["year"].replace("[","").replace("]","")
+                            feature.attributes[nameKey] = years[yearKey]["value"]
+                        });
+                      }
+                      else{
+                        console.log("setting", key, val)
+                        feature.attributes[key] = val
+                      }
+                    })
+                    return false
+                  }
+                  else {
+                    //outputFields.forEach(function(field){
+                    //  feature.attributes[field.name] = ""
+                    //})
+                    return true;
+                  }
+              });
+            }
         })
 
-        pushOutput(req, next, esriJSON, filters)
+        console.log(esriJSON.features[10].attributes)
+        pushOutput(req, next, esriJSON, filters,series_id)
       }
       catch (e) {
         console.log(e);
@@ -185,21 +195,6 @@ function getData (req, next, esriJSON, filters) {
 }
 
 function getFeatureValues(feature, data_element){
-  Object.keys(data_element).forEach(function(key) {
-    var val = data_element[key];
-    //Parse the Year Information
-    if(key==='years')
-    {
-      var years = JSON.parse(val);
-      Object.keys(years).forEach(function(yearKey) {
-          var nameKey = "year_" + years[yearKey]["year"].replace("[","").replace("]","")
-          feature.attributes[nameKey] = years[yearKey]["value"]
-      });
-    }
-    else{
-      feature.attributes[key] = val
-    }
-  })
 }
 
 function getDataFromURL (url, callback) {
