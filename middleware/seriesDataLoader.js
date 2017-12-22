@@ -88,7 +88,7 @@ function getMetaDataFields(data_element){
       var years = JSON.parse(val);
       Object.keys(years).forEach(function(yearKey) {
           var nameKey = "year_" + years[yearKey]["year"].replace("[","").replace("]","")
-          var field = {"name": nameKey,"type": "esriFieldTypeString","alias": nameKey,"sqlType": 'sqlTypeOther',"length": 2147483647,"domain": null,"defaultValue": null,"outName": nameKey}
+          var field = {"name": nameKey,"type": "esriFieldTypeDouble","alias": nameKey,"sqlType": 'sqlTypeFloat',"length": 10,"domain": null,"defaultValue": null,"outName": nameKey}
           if(!addedFields.includes(nameKey)){
             fields.push(field)
             addedFields.push(nameKey)
