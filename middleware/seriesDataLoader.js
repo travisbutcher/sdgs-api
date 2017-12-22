@@ -59,7 +59,7 @@ function getSpatialData(req,res,next){
     }
 
     //Ensure at least some parameters are set to get a proper dataset back for processing
-    if(boundary_url.indexOf("quantization") === -1)
+    if(boundary_url.indexOf("quantization") === -1 && (req.query['returnGeometry'] && req.query['returnGeometry'] =='true'))
       boundary_url += "&quantizationParameters=" + '{"mode":"view","originPosition":"upperLeft","tolerance":19567.87924099992,"extent":{"type":"extent","xmin":-20037507.067161843,"ymin":-30240971.958386146,"xmax":20037507.067161843,"ymax":18422214.740178905,"spatialReference":{"wkid":102100,"latestWkid":3857}}}'
 
     if(boundary_url.indexOf("where") === -1)
@@ -181,7 +181,7 @@ function getData (req, next, esriJSON, filters, series_id) {
                         var years = JSON.parse(val);
                         Object.keys(years).forEach(function(yearKey) {
                             var nameKey = "year_" + years[yearKey]["year"].replace("[","").replace("]","")
-                            feature.attributes[nameKey] = years[yearKey]["value"]
+                            feature.attributes[nameKey] = parseFloat(years[yearKey]["value"])
                         });
                       }
                       else{
