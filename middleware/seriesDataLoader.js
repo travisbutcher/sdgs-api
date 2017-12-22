@@ -31,7 +31,7 @@ module.exports = function (req, res, next) {
 
 function getSpatialData(req,res,next){
     const series_id = req.params.series_id;
-    var boundary_url = 'https://services7.arcgis.com/gp50Ao2knMlOM89z/arcgis/rest/services/SDG_AREA/FeatureServer/0/query?'
+    var boundary_url = esriService + "/query?"
     var filters = {"all":true,"geometry": true, "projection": true, "where": false, "offset": true}
 
     if(req.generateRenderer){
@@ -58,8 +58,8 @@ function getSpatialData(req,res,next){
     if(boundary_url.indexOf("quantization") === -1)
       boundary_url += "&quantizationParameters=" + '{"mode":"view","originPosition":"upperLeft","tolerance":19567.87924099992,"extent":{"type":"extent","xmin":-20037507.067161843,"ymin":-30240971.958386146,"xmax":20037507.067161843,"ymax":18422214.740178905,"spatialReference":{"wkid":102100,"latestWkid":3857}}}'
 
-    if(boundary_url.indexOf("geometry") === -1)
-      boundary_url += "&where=M49=792&resultRecordCount=1"
+    //if(boundary_url.indexOf("geometry") === -1)
+    //  boundary_url += "&where=M49=792&resultRecordCount=1"
 
     if(boundary_url.toLowerCase().indexOf("outfields") === -1)
       boundary_url += "&outFields=*"
@@ -156,7 +156,6 @@ function getData (req, next, esriJSON, filters, series_id) {
             if(esriJSON.features){
               esriJSON.features.every((feature) => {
                   if(feature["attributes"]["M49"] == geocode){
-                    console.log("Setting Feature Values")
                     Object.keys(data_element).forEach(function(key) {
                       var val = data_element[key];
                       //Parse the Year Information
