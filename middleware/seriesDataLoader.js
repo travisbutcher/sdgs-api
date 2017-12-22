@@ -3,6 +3,7 @@ let BOUNDARIES;
 const GeoJSON = require('esri-to-geojson')
 const request = require('request').defaults({gzip: true, json: true});
 const esriService = "https://services7.arcgis.com/gp50Ao2knMlOM89z/arcgis/rest/services/SDG_AREA/FeatureServer/0"
+const sdgBaseURL = "https://unstats.un.org/SDGAPI/v1/sdg/Series/PivotData"
 var outputFields = []
 var outEsriFields = []
 
@@ -10,8 +11,7 @@ module.exports = function (req, res, next) {
   var series_id = req.params.series_id;
   
   if(outputFields.length == 0 && outEsriFields.length == 0){
-    var sdgBaseURL = "https://unstats.un.org/SDGAPI/v1/sdg/Series/PivotData?seriesCode=SI_POV_DAY1&areaCode=792&pageSize=1"
-    getDataFromURL(sdgBaseURL, (err, raw) => {
+    getDataFromURL(sdgBaseURL + "?seriesCode=SI_POV_DAY1&areaCode=792&pageSize=1", (err, raw) => {
       if (err) return res.status(err.status_code).send(err);
       outputFields = getMetaDataFields(raw.data[0])
       //Get the field data from ArcGIS Online Feature Service
@@ -19,8 +19,6 @@ module.exports = function (req, res, next) {
         if (err) return res.status(err.status_code).send(err);
 
         outEsriFields = raw["fields"].concat(outputFields)
-        console.log(outEsriFields)
-        //console.log(outputFields)
         getSpatialData(req,res,next)
       })
     })
@@ -111,7 +109,6 @@ function getMetaDataFields(data_element){
 
 function pushOutput(req, next, esriJSON, filters, series_id){
   try{
-      console.log("running output")
       var output = esriJSON
       output["filtersApplied"] = filters
       output["metadata"] = {}
@@ -121,12 +118,9 @@ function pushOutput(req, next, esriJSON, filters, series_id){
       output["metadata"]["geometryType"] = "Polygon"
       output["metadata"]["extent"] = esriJSON.extent ? esriJSON.extent : {"xmin" : -20037507.067161843, "ymin" : -30240971.958386146, "xmax" : 20037507.067161843, "ymax" : 18422214.740178905, "spatialReference" : {"wkid" : 102100, "latestWkid" : 3857}}
       output["metadata"]["spatialReference"] = esriJSON.spatialReference ? esriJSON.spatialReference : {"wkid" : 102100, "latestWkid" : 3857}
-      var metaFields = 
-      output["metadata"]["fields"] = metaFields
+      output["metadata"]["fields"] = outEsriFields
       if(esriJSON.transform) output["metadata"]["transform"] = esriJSON.transform
       output["capabilities"] = {"quantization": true}
-
-      console.log(output)
       req.rawData = output;
       next()
     }
@@ -136,7 +130,6 @@ function pushOutput(req, next, esriJSON, filters, series_id){
 }
 
 function getData (req, next, esriJSON, filters, series_id) {
-  var sdgBaseURL = "https://unstats.un.org/SDGAPI/v1/sdg/Series/PivotData?seriesCode=" + series_id
   //do we need data with this request?
   if(esriJSON.features){
     //Get a list of the M49 codes to grab from the data
@@ -150,11 +143,9 @@ function getData (req, next, esriJSON, filters, series_id) {
         req.rawData = esriJSON
         next();
     }
-
-    sdgBaseURL += "&areaCode=" + m49.join() + "&pageSize=2000"
   }
 
-  getDataFromURL(sdgBaseURL, (err, raw) => {
+  getDataFromURL(sdgBaseURL + "?seriesCode="+series_id +"&areaCode=" + m49.join() + "&pageSize=2000", (err, raw) => {
     if (err) return res.status(err.status_code).send(err);
 
     try{
