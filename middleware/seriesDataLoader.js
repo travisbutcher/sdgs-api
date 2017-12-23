@@ -35,7 +35,8 @@ module.exports = function (req, res, next) {
 function getSpatialData(req,res,next){
   try{
     const series_id = req.params.series_id;
-    var boundary_url = esriService + "/query?"
+    var boundary_url = esriService + "/query?f=json"
+    var addedParam = false
     var filters = {"all":true,"geometry": true, "projection": true, "where": false, "offset": true}
 
     if(req.generateRenderer){
@@ -68,10 +69,9 @@ function getSpatialData(req,res,next){
     if(boundary_url.toLowerCase().indexOf("outfields") === -1)
       boundary_url += "&outFields=*"
 
-    if(boundary_url.indexOf('f=') === -1)
-      boundary_url += "&f=json"
+    //if(boundary_url.indexOf('f=') === -1)
+    //  boundary_url += "&f=json"
 
-    console.log(boundary_url)
     getDataFromURL(boundary_url, (err, raw) => {
       if (err) return res.status(err.status_code).send(err);
       if(raw.features && raw.features.length !== 0){
@@ -125,12 +125,13 @@ function pushOutput(req, next, esriJSON, filters, series_id){
   try{
       var output = esriJSON
       output["filtersApplied"] = filters
+      output["layers"] = [{"id":0,"name":series_id,"parentLayerId":-1,"defaultVisibility":true,"subLayerIds":null,"minScale":0,"maxScale":0,"spatialReference" : {"wkid" : 102100, "latestWkid" : 3857}}]
       output["metadata"] = {}
       output["metadata"]["idField"] = "OBJECTID"
       output["metadata"]["name"] = series_id
       output["metadata"]["description"] = "This provides informmation for the Sustainable Development Goals related to series " + series_id
       output["metadata"]["geometryType"] = "Polygon"
-      output["metadata"]["extent"] = esriJSON.extent ? esriJSON.extent : {"xmin" : -20037507.067161843, "ymin" : -30240971.958386146, "xmax" : 20037507.067161843, "ymax" : 18422214.740178905, "spatialReference" : {"wkid" : 102100, "latestWkid" : 3857}}
+      output["metadata"]["extent"] = {"xmin" : -20037507.067161843, "ymin" : -30240971.958386146, "xmax" : 20037507.067161843, "ymax" : 18422214.740178905, "spatialReference" : {"wkid" : 102100, "latestWkid" : 3857}}
       output["metadata"]["spatialReference"] = esriJSON.spatialReference ? esriJSON.spatialReference : {"wkid" : 102100, "latestWkid" : 3857}
       output["metadata"]["fields"] = outEsriFields
       if(esriJSON.transform) output["metadata"]["transform"] = esriJSON.transform
