@@ -126,6 +126,7 @@ function pushOutput(req, next, esriJSON, filters, series_id){
       var output = esriJSON
       output["filtersApplied"] = filters
       output["layers"] = [{"id":0,"name":series_id,"parentLayerId":-1,"defaultVisibility":true,"subLayerIds":null,"minScale":0,"maxScale":0,"spatialReference" : {"wkid" : 102100, "latestWkid" : 3857}}]
+      output["extent"] = {"xmin" : -20037507.067161843, "ymin" : -30240971.958386146, "xmax" : 20037507.067161843, "ymax" : 18422214.740178905, "spatialReference" : {"wkid" : 102100, "latestWkid" : 3857}}
       output["metadata"] = {}
       output["metadata"]["idField"] = "OBJECTID"
       output["metadata"]["name"] = series_id
