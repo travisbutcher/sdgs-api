@@ -1,11 +1,6 @@
-[![Build Status](https://travis-ci.org/koopjs/koop-provider-sample.svg?branch=master)](https://travis-ci.org/koopjs/koop-provider-sample) [![Greenkeeper badge](https://badges.greenkeeper.io/koopjs/koop-provider-sample.svg)](https://greenkeeper.io/)
+# Koop Provider for the UN SDG Project
 
-
-# Koop Sample Provider
-
-This is a sample that demonstrates how to build a Koop Provider. Full documentation is provided [here](https://koopjs.github.io/docs/specs/provider/).
-
-The data source in this case is the [TriMet Bus API](https://developer.trimet.org). You can see this provider in action [here](http://dcdev.maps.arcgis.com/home/item.html?id=2603e7e3f10742f78093edf8ea2adfd8#visualize).
+This Koop provider is designed for use with the UN SDG API (https://unstats.un.org/SDGAPI/swagger/#/) as the attribute base. The geometry is merged with data from a Hosted Feature service in ArcGIS Online.  This verision of the Koop connector supports the Quantization Paramaters to serve the geometry based on scale for high performance.  
 
 If you want to write your own provider, simply fork this repository or copy the contents.
 
