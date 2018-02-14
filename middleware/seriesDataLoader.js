@@ -2,7 +2,7 @@ let BOUNDARIES;
 
 const GeoJSON = require('esri-to-geojson')
 const request = require('request').defaults({gzip: true, json: true});
-const esriService = "https://services7.arcgis.com/gp50Ao2knMlOM89z/arcgis/rest/services/SDG_AREA/FeatureServer/0"
+const esriService = "https://services7.arcgis.com/gp50Ao2knMlOM89z/arcgis/rest/services/SDG_M49_PT/FeatureServer/0"
 const sdgBaseURL = "https://unstats.un.org/SDGAPI/v1/sdg/Series/PivotData"
 var outputFields = []
 var outEsriFields = []
@@ -60,17 +60,14 @@ function getSpatialData(req,res,next){
     }
 
     //Ensure at least some parameters are set to get a proper dataset back for processing
-    if(boundary_url.indexOf("quantization") === -1)
-      boundary_url += "&quantizationParameters=" + '{"mode":"view","originPosition":"upperLeft","tolerance":19567.87924099992,"extent":{"type":"extent","xmin":-20037507.067161843,"ymin":-30240971.958386146,"xmax":20037507.067161843,"ymax":18422214.740178905,"spatialReference":{"wkid":102100,"latestWkid":3857}}}'
+    //if(boundary_url.indexOf("quantization") === -1)
+    //  boundary_url += "&quantizationParameters=" + '{"mode":"view","originPosition":"upperLeft","tolerance":19567.87924099992,"extent":{"type":"extent","xmin":-20037507.067161843,"ymin":-30240971.958386146,"xmax":20037507.067161843,"ymax":18422214.740178905,"spatialReference":{"wkid":102100,"latestWkid":3857}}}'
 
     if(boundary_url.indexOf("where") === -1)
       boundary_url += "&where=1=1"
 
     if(boundary_url.toLowerCase().indexOf("outfields") === -1)
       boundary_url += "&outFields=*"
-
-    //if(boundary_url.indexOf('f=') === -1)
-    //  boundary_url += "&f=json"
 
     getDataFromURL(boundary_url, (err, raw) => {
       if (err) return res.status(err.status_code).send(err);
@@ -131,12 +128,12 @@ function pushOutput(req, next, esriJSON, filters, series_id){
       output["metadata"]["idField"] = "OBJECTID"
       output["metadata"]["name"] = series_id
       output["metadata"]["description"] = "This provides informmation for the Sustainable Development Goals related to series " + series_id
-      output["metadata"]["geometryType"] = "Polygon"
+      output["metadata"]["geometryType"] = "Point"
       output["metadata"]["extent"] = {"xmin" : -20037507.067161843, "ymin" : -30240971.958386146, "xmax" : 20037507.067161843, "ymax" : 18422214.740178905, "spatialReference" : {"wkid" : 102100, "latestWkid" : 3857}}
       output["metadata"]["spatialReference"] = esriJSON.spatialReference ? esriJSON.spatialReference : {"wkid" : 102100, "latestWkid" : 3857}
       output["metadata"]["fields"] = outEsriFields
       if(esriJSON.transform) output["metadata"]["transform"] = esriJSON.transform
-      output["capabilities"] = {"quantization": true}
+      //output["capabilities"] = {"quantization": true}
       req.rawData = output;
       next()
     }
@@ -204,9 +201,6 @@ function getData (req, next, esriJSON, filters, series_id) {
         console.log(e);
       }
   })
-}
-
-function getFeatureValues(feature, data_element){
 }
 
 function getDataFromURL (url, callback) {
